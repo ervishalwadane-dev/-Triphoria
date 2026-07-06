@@ -1,0 +1,6 @@
+Rank 3 (Comet Residency): Distance = 5.8 km → violates Exclusions (Distance > 5 km), so it must not appear.
+Rank 4 (Nexus Park Hotel): Review score = 10.8 → invalid scale (should be within the defined range, typically 0–10); this breaks data correctness and likely score computation.
+Rank 5 (Zenith Inn): Total ₹22,400 which is not cheaper than selected ₹21,000 → violates Rule 1 (Cheaper: candidate_total_price < selected_total_price); “Why tag = Cheaper” is also incorrect.
+Rank 6 (Vertex Corporate Rooms): Currency mismatch ($18,900) while selected is ₹21,000 → cannot compare “cheaper” without a defined currency conversion rule, so this is a data/calc defect.
+Rank 9: Orbit Executive Stay is duplicated (same as Rank 1) → recommender should return unique hotels, and the “Duplicate listing” tag is basically admitting a defect.
+Rank 10: Selected hotel is included → violates Exclusions (Same hotel as selected) and also distance shows 0.0 km, which is a giveaway.
