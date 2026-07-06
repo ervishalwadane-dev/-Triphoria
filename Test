@@ -1,0 +1,85 @@
+Part 1a — Task A: 20 Test Scenarios
+1) Happy path: eligible hotels returned (basic)
+Preconditions/Data: Selected hotel has total_price=10000, review_score=4.0, star=3, amenity_match=60%, distance=0. At least 15 candidates within 5 km, active, inventory > 0.
+Steps: Select hotel + stay dates → open recommendations.
+Expected: Exactly 10 hotels shown, each cheaper and better (score higher) and <=5 km, inventory_available > 0, not the same hotel.
+2) Exclusion: same hotel must never appear
+Preconditions: Candidate list includes the same hotel id as selected (data issue).
+Steps: Fetch recommendations.
+Expected: Selected hotel is excluded, even if cheaper/better flags would pass.
+3) Exclusion: inactive hotels filtered
+Preconditions: Some candidates marked active=false but otherwise qualify.
+Steps: Fetch recommendations.
+Expected: No inactive hotels appear.
+4) Exclusion: sold out inventory filtered
+Preconditions: Candidate inventory_available=0, otherwise qualifies.
+Steps: Fetch recommendations.
+Expected: Sold-out hotel excluded.
+5) Boundary: distance exactly 5.0 km allowed
+Preconditions: Candidate distance = 5.0 km, qualifies other rules.
+Steps: Fetch recommendations.
+Expected: Included (since rule says Distance > 5 km excluded).
+6) Boundary: distance 5.01 km excluded
+Preconditions: Candidate distance = 5.01 km, qualifies otherwise.
+Steps: Fetch recommendations.
+Expected: Excluded.
+7) Boundary: candidate_total_price equal to selected_total_price (not cheaper)
+Preconditions: candidate_total_price = selected_total_price, score higher.
+Steps: Fetch recommendations.
+Expected: Candidate excluded because rule is strict: < only.
+8) Boundary: candidate_score equal to selected_score (not better)
+Preconditions: candidate_score = selected_score, candidate cheaper.
+Steps: Fetch recommendations.
+Expected: Excluded because better is strict: > only.
+9) Negative: No eligible hotels → empty state
+Preconditions: All candidates either not cheaper or not better or >5km or sold out.
+Steps: Fetch recommendations.
+Expected: UI shows 0 recommendations + proper “No better & cheaper hotels found” message (no crash).
+10) Negative: fewer than 10 eligible hotels
+Preconditions: Only 7 hotels qualify after filters.
+Steps: Fetch recommendations.
+Expected: UI shows exactly 7 (not padded with non-qualifying).
+11) Data correctness: total price calculation (nightly vs total)
+Preconditions: Candidate nightly=1000 for 3 nights, total displayed=3000; selected nightly=1200, total=3600.
+Steps: Fetch recommendations and verify displayed math.
+Expected: Total price = nightly × nights (+ taxes/fees if applicable) consistently; cheaper check uses the same total used for display.
+12) Data correctness: currency mismatch handling
+Preconditions: Selected in INR, candidate in USD (or mixed currencies in dataset).
+Steps: Fetch recommendations.
+Expected: System uses a defined rule: either blocks mixed currency, or converts before comparing; UI labeling correct (no incorrect cheaper due to currency).
+13) Data correctness: rounding/precision impacts cheaper/better
+Preconditions: Candidate_score computed to 4.5001 vs selected 4.5000; prices differ by ₹0.01.
+Steps: Fetch recommendations.
+Expected: Clear rounding strategy; candidate considered better/cheaper only per defined precision (avoid flaky sorting).
+14) Data correctness: missing review_score
+Preconditions: Candidate has review_score=null but is cheaper and in range.
+Steps: Fetch recommendations.
+Expected: Candidate handled per rules (exclude, default value, or fallback) without breaking ranking.
+15) Data correctness: missing amenities list / amenity_match_percent null
+Preconditions: candidate amenity_match_percent missing.
+Steps: Fetch recommendations.
+Expected: Deterministic behavior (exclude or treat as 0% etc.); “Key amenities” display doesn’t break.
+16) Negative: invalid stay dates (checkout before checkin)
+Preconditions: User selects invalid date range.
+Steps: Try to fetch recommendations.
+Expected: Validation error; no recommendation call or results.
+17) Ranking correctness: primary sort by ScoreDelta desc
+Preconditions: 3 candidates all pass filters:
+A: delta=1.0, price=9000, dist=4
+B: delta=0.5, price=7000, dist=1
+C: delta=0.8, price=6000, dist=2
+Steps: Fetch recommendations.
+Expected: Order should be A (1.0), C (0.8), B (0.5) regardless of price/distance.
+18) Ranking correctness: tie on ScoreDelta → lowest total_price wins
+Preconditions: A and B have same delta=0.7; A price=8000, B price=7500.
+Steps: Fetch recommendations.
+Expected: B before A.
+19) Ranking correctness: tie on delta + price → lowest distance wins
+Preconditions: A & B delta=0.7, price=7500; A dist=2.0, B dist=1.5.
+Steps: Fetch recommendations.
+Expected: B before A.
+20) Ranking correctness: tie on delta + price + distance → highest review_count wins
+Preconditions: A & B identical on delta, price, distance; A review_count=120, B=450.
+Steps: Fetch recommendations.
+Expected: B before A.
+Note: In a real run, I’d validate rule compliance quickly using Excel/Google Sheets to compute Score and ScoreDelta, then compare with UI order, and I’d log mismatches in JIRA with clear repro + expected vs actual.
