@@ -1,0 +1,14 @@
+{
+  "name": "tripare-playwright-assignment",
+  "version": "1.0.0",
+  "private": true,
+  "devDependencies": {
+    "@playwright/test": "^1.46.0",
+    "typescript": "^5.5.4"
+  },
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui"
+  }
+}
